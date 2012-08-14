@@ -88,6 +88,7 @@ sub _cmd_use {
 sub _cmd_install {
     my ($self, $args) = @_;
     my $version = _v($args->[0]) or return print "required version\n";
+    my $with_tools = grep( /^--with-tools$/, @$args );
 
     if ($version !~ m/v\d+\.\d+\.\d+/) {
         $version = Nodebrew::Utils::find_version(
@@ -127,13 +128,22 @@ sub _cmd_install {
     else {
         print "Install using cache.\n\n";
     }
-
+    
     system qq[
         cd "$src_path" &&
         ./configure --prefix="$self->{node_dir}/$version" &&
         make &&
         make install
     ];
+    
+    if ($with_tools){
+        system qq[
+            cd "$src_path/deps/v8" &&
+            scons d8 &&
+            cp -Rv ./tools "$self->{node_dir}/$version/libexec" &&
+            install -v ./d8 "$self->{node_dir}/$version/libexec"
+        ];
+    }
 }
 
 sub _cmd_uninstall {
